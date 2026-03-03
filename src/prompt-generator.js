@@ -2,14 +2,15 @@ const axios = require('axios');
 const { API_BASE_URL, MODEL, IMAGE_COUNT, REQUEST_TIMEOUT } = require('./config');
 
 async function generatePrompts(topic) {
-  const metaPrompt = `Generate exactly ${IMAGE_COUNT} image prompts for a TikTok slideshow about: "${topic}"
+  const metaPrompt = `You are a creative writing assistant. I need you to write ${IMAGE_COUNT} short text descriptions that I will later use as AI image generation prompts. The topic is: "${topic}"
 
-Requirements:
-- Each prompt should describe a visually striking scene suitable for vertical 9:16 format
-- Prompts should tell a visual story when viewed in sequence
-- Keep each prompt to 1-2 sentences, focused on visual details
-- Number each prompt (1. 2. 3.)
-- Do NOT include any other text, explanation, or commentary — only the numbered prompts`;
+Rules:
+- Write exactly ${IMAGE_COUNT} descriptions, numbered 1. 2. 3.
+- Each description should be 1-2 sentences describing a visually striking scene in vertical 9:16 portrait format
+- The descriptions should tell a visual story when read in sequence
+- Focus on visual details: colors, lighting, composition, mood
+- Do NOT generate, draw, or create any images — I only need the text descriptions
+- Output ONLY the numbered list, no extra commentary`;
 
   const { data } = await axios.post(`${API_BASE_URL}/chat`, {
     prompt: metaPrompt,
