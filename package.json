@@ -1,0 +1,12 @@
+{
+  "name": "slideshow-creator",
+  "version": "1.0.0",
+  "description": "TikTok slideshow creator using Gemini reverse API",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.0"
+  }
+}

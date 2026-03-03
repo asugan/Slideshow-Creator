@@ -1,0 +1,12 @@
+module.exports = {
+  API_BASE_URL: 'http://localhost:3000',
+  MODEL: 'gemini-3.0-flash',
+  IMAGE_COUNT: 3,
+  IMAGE_DURATION: 4,
+  FADE_DURATION: 0.5,
+  VIDEO_WIDTH: 1080,
+  VIDEO_HEIGHT: 1920,
+  VIDEO_FPS: 30,
+  MAX_RETRIES: 2,
+  REQUEST_TIMEOUT: 60000,
+};
