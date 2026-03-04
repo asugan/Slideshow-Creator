@@ -35,7 +35,7 @@ async function generatePrompts(topic) {
   const metaPrompt = `You are a creative writing assistant. I need you to write ${IMAGE_COUNT} short text descriptions that I will later use as AI image generation prompts. The topic is: "${topic}"
 
 Rules:
-- Write exactly ${IMAGE_COUNT} descriptions, numbered 1. 2. 3.
+- Write exactly ${IMAGE_COUNT} descriptions, numbered ${Array.from({length: IMAGE_COUNT}, (_, i) => `${i + 1}.`).join(' ')}
 - Each description should be 1-2 sentences describing a visually striking scene in vertical 9:16 portrait format
 - The descriptions should tell a visual story when read in sequence
 - Focus on visual details: colors, lighting, composition, mood

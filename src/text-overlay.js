@@ -68,4 +68,4 @@ function applyTextOverlay(inputPath, outputPath, caption) {
   });
 }
 
-module.exports = { applyTextOverlay };
+module.exports = { applyTextOverlay, wrapText, escapeDrawtext };

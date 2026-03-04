@@ -152,8 +152,13 @@ async function cmdSlideshow() {
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
   const outputFile = path.join(OUTPUT_DIR, `${slugify(topic)}_${timestamp()}.mp4`);
 
+  // Load captions for video-time text animation (fade-in)
+  const captions = fs.existsSync(CAPTIONS_FILE)
+    ? JSON.parse(fs.readFileSync(CAPTIONS_FILE, 'utf-8'))
+    : null;
+
   console.log('Building slideshow video...');
-  await buildSlideshow(imagePaths, outputFile);
+  await buildSlideshow(imagePaths, outputFile, captions);
   console.log(`\nDone! Video saved to: ${outputFile}`);
 }
 
@@ -205,9 +210,9 @@ async function main() {
         break;
       default:
         console.log(`Usage:
-  node index.js prompts "<topic>"   Generate 3 image prompts
-  node index.js image <1-3>         Generate image N
-  node index.js dewatermark [1-3]   Remove Gemini watermark (all or slide N)
+  node index.js prompts "<topic>"   Generate ${IMAGE_COUNT} image prompts
+  node index.js image <1-${IMAGE_COUNT}>         Generate image N
+  node index.js dewatermark [1-${IMAGE_COUNT}]   Remove Gemini watermark (all or slide N)
   node index.js captions            Generate TikTok captions
   node index.js overlay             Overlay captions on images
   node index.js slideshow           Build MP4 from images
@@ -218,6 +223,8 @@ Example:
   node index.js image 1
   node index.js image 2
   node index.js image 3
+  node index.js image 4
+  node index.js image 5
   node index.js dewatermark
   node index.js captions
   node index.js overlay

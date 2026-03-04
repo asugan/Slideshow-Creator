@@ -40,7 +40,7 @@ Image descriptions:
 ${promptList}
 
 Rules:
-- Write exactly ${IMAGE_COUNT} captions, numbered 1. 2. 3.
+- Write exactly ${IMAGE_COUNT} captions, numbered ${Array.from({length: IMAGE_COUNT}, (_, i) => `${i + 1}.`).join(' ')}
 - Each caption must be 5-10 words maximum
 - Make them attention-grabbing, emotional, or curiosity-inducing
 - Use simple, punchy language (TikTok style)
