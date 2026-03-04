@@ -17,7 +17,7 @@ async function generateSingleImage(prompt, outputPath) {
 
     try {
       const resp = await axios.post(`${API_BASE_URL}/generate-image`, {
-        prompt: `Generate an image of: ${prompt}`,
+        prompt: `Generate a vertical portrait image (9:16 aspect ratio, taller than wide) of: ${prompt}`,
         model: MODEL,
       }, {
         timeout: REQUEST_TIMEOUT,

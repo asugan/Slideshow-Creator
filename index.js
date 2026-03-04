@@ -2,12 +2,15 @@ const fs = require('fs');
 const path = require('path');
 const { generatePrompts } = require('./src/prompt-generator');
 const { generateSingleImage } = require('./src/image-generator');
+const { generateCaptions } = require('./src/caption-generator');
+const { applyTextOverlay } = require('./src/text-overlay');
 const { buildSlideshow } = require('./src/slideshow-builder');
 const { IMAGE_COUNT } = require('./src/config');
 
 const WORK_DIR = path.join(__dirname, 'temp', 'current');
 const OUTPUT_DIR = path.join(__dirname, 'output');
 const PROMPTS_FILE = path.join(WORK_DIR, 'prompts.json');
+const CAPTIONS_FILE = path.join(WORK_DIR, 'captions.json');
 const TOPIC_FILE = path.join(WORK_DIR, 'topic.txt');
 
 function slugify(text) {
@@ -77,6 +80,37 @@ async function cmdImage(num) {
   }
 }
 
+async function cmdCaptions() {
+  const prompts = loadPrompts();
+
+  console.log('Generating TikTok captions...');
+  const captions = await generateCaptions(prompts);
+  captions.forEach((c, i) => console.log(`  ${i + 1}. ${c}`));
+
+  fs.writeFileSync(CAPTIONS_FILE, JSON.stringify(captions, null, 2));
+  console.log(`\nCaptions saved. Now run: node index.js overlay`);
+}
+
+async function cmdOverlay() {
+  if (!fs.existsSync(CAPTIONS_FILE)) {
+    throw new Error('No captions found. Run: node index.js captions first');
+  }
+  const captions = JSON.parse(fs.readFileSync(CAPTIONS_FILE, 'utf-8'));
+
+  for (let i = 1; i <= IMAGE_COUNT; i++) {
+    const inputPath = path.join(WORK_DIR, `slide_${i}.png`);
+    if (!fs.existsSync(inputPath)) {
+      throw new Error(`Missing slide_${i}.png. Run: node index.js image ${i}`);
+    }
+    const outputPath = path.join(WORK_DIR, `slide_${i}_captioned.png`);
+    console.log(`Overlaying caption on slide ${i}: "${captions[i - 1]}"`);
+    await applyTextOverlay(inputPath, outputPath, captions[i - 1]);
+    console.log(`  Saved: ${outputPath}`);
+  }
+
+  console.log(`\nAll overlays done. Now run: node index.js slideshow`);
+}
+
 async function cmdSlideshow() {
   const topic = loadTopic();
 
@@ -108,6 +142,8 @@ async function cmdAll(topic) {
   for (let i = 1; i <= IMAGE_COUNT; i++) {
     await cmdImage(String(i));
   }
+  await cmdCaptions();
+  await cmdOverlay();
   await cmdSlideshow();
 }
 
@@ -126,6 +162,12 @@ async function main() {
       case 'image':
         await cmdImage(rest);
         break;
+      case 'captions':
+        await cmdCaptions();
+        break;
+      case 'overlay':
+        await cmdOverlay();
+        break;
       case 'slideshow':
         await cmdSlideshow();
         break;
@@ -136,6 +178,8 @@ async function main() {
         console.log(`Usage:
   node index.js prompts "<topic>"   Generate 3 image prompts
   node index.js image <1-3>         Generate image N
+  node index.js captions            Generate TikTok captions
+  node index.js overlay             Overlay captions on images
   node index.js slideshow           Build MP4 from images
   node index.js all "<topic>"       Run all steps
 
@@ -144,6 +188,8 @@ Example:
   node index.js image 1
   node index.js image 2
   node index.js image 3
+  node index.js captions
+  node index.js overlay
   node index.js slideshow`);
         process.exit(command ? 1 : 0);
     }

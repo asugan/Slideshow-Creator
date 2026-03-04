@@ -18,7 +18,7 @@ function buildFfmpegArgs(imagePaths, outputPath) {
   // Build filter chain
   const n = imagePaths.length;
   const filterParts = [];
-  const scaleFilter = `scale=${VIDEO_WIDTH}:${VIDEO_HEIGHT}:force_original_aspect_ratio=decrease,pad=${VIDEO_WIDTH}:${VIDEO_HEIGHT}:(ow-iw)/2:(oh-ih)/2:black,fps=${VIDEO_FPS},format=yuv420p`;
+  const scaleFilter = `scale=${VIDEO_WIDTH}:${VIDEO_HEIGHT}:force_original_aspect_ratio=increase,crop=${VIDEO_WIDTH}:${VIDEO_HEIGHT},fps=${VIDEO_FPS},format=yuv420p`;
 
   // Scale + pad each input
   for (let i = 0; i < n; i++) {
@@ -45,7 +45,16 @@ function buildFfmpegArgs(imagePaths, outputPath) {
   return args;
 }
 
+function getCaptionedPaths(imagePaths) {
+  const fs = require('fs');
+  return imagePaths.map(p => {
+    const captioned = p.replace(/\.png$/, '_captioned.png');
+    return fs.existsSync(captioned) ? captioned : p;
+  });
+}
+
 function buildSlideshow(imagePaths, outputPath) {
+  imagePaths = getCaptionedPaths(imagePaths);
   return new Promise((resolve, reject) => {
     const args = buildFfmpegArgs(imagePaths, outputPath);
 
