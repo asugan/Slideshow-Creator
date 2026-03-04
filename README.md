@@ -1,27 +1,30 @@
 # Slideshow Creator
 
-A CLI tool that generates TikTok-style slideshow videos from a single topic. It uses Gemini AI to create images and captions, then stitches everything together with ffmpeg into a polished 9:16 vertical video with crossfade transitions.
+A CLI tool that generates TikTok-style slideshow videos from a single topic. It uses Gemini AI to create images and captions, then stitches everything together with ffmpeg into a polished 9:16 vertical video with crossfade transitions. Supports multiple image generation backends.
 
 ## How It Works
 
 ```
-topic → AI image prompts → AI images → AI captions → text overlay → slideshow video
+topic → AI image prompts → AI images → dewatermark + logo → AI captions → text overlay → slideshow video
 ```
 
 Give it a topic like *"sunset over tokyo"* and it will:
 
 1. Generate 3 descriptive image prompts via Gemini
 2. Generate 3 portrait images from those prompts
-3. Write short, punchy TikTok-style captions for each slide
-4. Overlay the captions onto the images (bold white text, black outline)
-5. Build a crossfade MP4 video in 1080×1920 (9:16) format
+3. Remove AI watermarks and replace with brand logo
+4. Write short, punchy TikTok-style captions for each slide
+5. Overlay the captions onto the images (bold white text, black outline)
+6. Build a crossfade MP4 video in 1080×1920 (9:16) format
 
 ## Prerequisites
 
 - **Node.js** (v18+)
 - **ffmpeg** installed and available in PATH
 - **DejaVuSans-Bold** font at `/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf`
-- **[gemini-reverse-api](../gemini-reverse-api)** running on `localhost:3000`
+- One of the following image providers:
+  - **[gemini-reverse-api](../gemini-reverse-api)** running on `localhost:3000` (default)
+  - **OpenAI-compatible endpoint** (e.g. `localhost:8317/v1`) with an image generation model
 
 ## Setup
 
@@ -50,13 +53,16 @@ node index.js image 1
 node index.js image 2
 node index.js image 3
 
-# 3. Generate captions
+# 3. Remove watermarks and add brand logo
+node index.js dewatermark
+
+# 4. Generate captions
 node index.js captions
 
-# 4. Overlay captions onto images
+# 5. Overlay captions onto images
 node index.js overlay
 
-# 5. Build the final video
+# 6. Build the final video
 node index.js slideshow
 ```
 
@@ -79,12 +85,25 @@ All settings are in `src/config.js`:
 
 | Setting | Default | Description |
 |---|---|---|
+| `IMAGE_PROVIDER` | `gemini-reverse-api` | Image backend: `gemini-reverse-api` or `openai-compat` |
+| `OPENAI_COMPAT_BASE_URL` | `http://localhost:8317/v1` | OpenAI-compat API base URL |
+| `OPENAI_COMPAT_MODEL` | `gemini-3.1-flash-image` | Model name for openai-compat provider |
 | `VIDEO_WIDTH` | 1080 | Output video width |
 | `VIDEO_HEIGHT` | 1920 | Output video height (9:16) |
 | `IMAGE_COUNT` | 3 | Number of slides |
 | `IMAGE_DURATION` | 4 | Seconds per slide |
 | `FADE_DURATION` | 0.5 | Crossfade transition duration |
 | `CAPTION_FONT_SIZE` | 56 | Caption text size |
+
+## Image Providers
+
+### gemini-reverse-api (default)
+
+Uses a local [gemini-reverse-api](../gemini-reverse-api) instance on `localhost:3000`. Watermarks are removed via reverse alpha blending.
+
+### openai-compat
+
+Uses any OpenAI-compatible `/v1/chat/completions` endpoint with image generation support. Set `IMAGE_PROVIDER: 'openai-compat'` in `src/config.js`. Watermarks are removed via inpainting and replaced with the brand logo (`assets/foreground.png`).
 
 ## Why step-based?
 

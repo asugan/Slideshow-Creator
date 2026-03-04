@@ -93,7 +93,7 @@ async function cmdDewatermark(num) {
     }
     console.log(`Removing watermark from slide ${i}...`);
     const meta = await dewatermarkImage(imagePath);
-    console.log(`  Done (source: ${meta.source}, gain: ${meta.alphaGain}, suppression: ${meta.detection.suppressionGain.toFixed(2)})`);
+    console.log(`  Done (source: ${meta.source}${meta.detection ? `, gain: ${meta.alphaGain}, suppression: ${meta.detection.suppressionGain.toFixed(2)}` : ''})`);
   }
 
   console.log('\nWatermarks removed. Now run: node index.js captions');
