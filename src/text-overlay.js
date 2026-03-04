@@ -49,6 +49,7 @@ function applyTextOverlay(inputPath, outputPath, caption) {
       `shadowcolor=black@0.6`,
       `x=(w-tw)/2`,
       `y=h-th-120`,
+      `text_align=C`,
     ].join(':');
 
     const args = [
