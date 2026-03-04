@@ -16,6 +16,9 @@ const {
   CAPTION_FONT_SIZE,
   CAPTION_FADE_IN_DURATION,
   CAPTION_FADE_IN_DELAY,
+  CAPTION_BOTTOM_MARGIN,
+  CAPTION_BOX_PADDING,
+  CAPTION_BOX_OPACITY,
 } = require('./config');
 const { wrapText, escapeDrawtext } = require('./text-overlay');
 
@@ -129,8 +132,11 @@ function buildFfmpegArgs(imagePaths, outputPath, musicPath, captions) {
         `shadowx=2`,
         `shadowy=2`,
         `shadowcolor=black@0.6`,
+        `box=1`,
+        `boxcolor=black@${CAPTION_BOX_OPACITY}`,
+        `boxborderw=${CAPTION_BOX_PADDING}`,
         `x=(w-tw)/2`,
-        `y=h-th-120`,
+        `y=h-th-${CAPTION_BOTTOM_MARGIN}`,
         `text_align=C`,
         `enable='between(t,${textStart.toFixed(2)},${textEnd.toFixed(2)})'`,
         `alpha='if(lt(t\\,${fadeEnd.toFixed(2)})\\,(t-${textStart.toFixed(2)})/${CAPTION_FADE_IN_DURATION}\\,1)'`,

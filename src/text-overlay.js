@@ -1,5 +1,5 @@
 const { execFile } = require('child_process');
-const { CAPTION_FONT, CAPTION_FONT_SIZE, VIDEO_WIDTH, VIDEO_HEIGHT } = require('./config');
+const { CAPTION_FONT, CAPTION_FONT_SIZE, CAPTION_BOTTOM_MARGIN, CAPTION_BOX_PADDING, CAPTION_BOX_OPACITY, VIDEO_WIDTH, VIDEO_HEIGHT } = require('./config');
 
 const MAX_CHARS_PER_LINE = 25;
 
@@ -47,8 +47,11 @@ function applyTextOverlay(inputPath, outputPath, caption) {
       `shadowx=2`,
       `shadowy=2`,
       `shadowcolor=black@0.6`,
+      `box=1`,
+      `boxcolor=black@${CAPTION_BOX_OPACITY}`,
+      `boxborderw=${CAPTION_BOX_PADDING}`,
       `x=(w-tw)/2`,
-      `y=h-th-120`,
+      `y=h-th-${CAPTION_BOTTOM_MARGIN}`,
       `text_align=C`,
     ].join(':');
 
