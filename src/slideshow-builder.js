@@ -1,18 +1,37 @@
 const { execFile } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 const {
   IMAGE_DURATION,
   FADE_DURATION,
   VIDEO_WIDTH,
   VIDEO_HEIGHT,
   VIDEO_FPS,
+  MUSIC_DIR,
+  MUSIC_VOLUME,
 } = require('./config');
 
-function buildFfmpegArgs(imagePaths, outputPath) {
+function pickRandomTrack() {
+  if (!fs.existsSync(MUSIC_DIR)) return null;
+  const tracks = fs.readdirSync(MUSIC_DIR).filter(f => /\.(mp3|m4a|wav|ogg|aac)$/i.test(f));
+  if (tracks.length === 0) return null;
+  const pick = tracks[Math.floor(Math.random() * tracks.length)];
+  return path.join(MUSIC_DIR, pick);
+}
+
+function buildFfmpegArgs(imagePaths, outputPath, musicPath) {
   const args = [];
 
   // Inputs: each image looped for IMAGE_DURATION seconds
   for (const img of imagePaths) {
     args.push('-loop', '1', '-t', String(IMAGE_DURATION), '-i', img);
+  }
+
+  const audioInputIndex = imagePaths.length;
+
+  // Music input: loop indefinitely, will be trimmed by -shortest
+  if (musicPath) {
+    args.push('-stream_loop', '-1', '-i', musicPath);
   }
 
   // Build filter chain
@@ -36,8 +55,21 @@ function buildFfmpegArgs(imagePaths, outputPath) {
     prevLabel = outLabel;
   }
 
+  // Audio: trim to video length, volume adjust, fade out last 1s
+  if (musicPath) {
+    const totalDuration = n * IMAGE_DURATION - (n - 1) * FADE_DURATION;
+    const fadeOutStart = totalDuration - 1;
+    filterParts.push(
+      `[${audioInputIndex}:a]atrim=0:${totalDuration},asetpts=PTS-STARTPTS,volume=${MUSIC_VOLUME},afade=t=out:st=${fadeOutStart}:d=1[aout]`
+    );
+  }
+
   args.push('-filter_complex', filterParts.join(';'));
   args.push('-map', '[vout]');
+  if (musicPath) {
+    args.push('-map', '[aout]');
+    args.push('-c:a', 'aac', '-b:a', '192k');
+  }
   args.push('-c:v', 'libx264', '-preset', 'medium', '-crf', '23');
   args.push('-movflags', '+faststart');
   args.push('-y', outputPath);
@@ -46,7 +78,6 @@ function buildFfmpegArgs(imagePaths, outputPath) {
 }
 
 function getCaptionedPaths(imagePaths) {
-  const fs = require('fs');
   return imagePaths.map(p => {
     const captioned = p.replace(/\.png$/, '_captioned.png');
     return fs.existsSync(captioned) ? captioned : p;
@@ -55,8 +86,12 @@ function getCaptionedPaths(imagePaths) {
 
 function buildSlideshow(imagePaths, outputPath) {
   imagePaths = getCaptionedPaths(imagePaths);
+  const musicPath = pickRandomTrack();
+  if (musicPath) {
+    console.log(`  Background music: ${path.basename(musicPath)}`);
+  }
   return new Promise((resolve, reject) => {
-    const args = buildFfmpegArgs(imagePaths, outputPath);
+    const args = buildFfmpegArgs(imagePaths, outputPath, musicPath);
 
     execFile('ffmpeg', args, (error, _stdout, stderr) => {
       if (error) {

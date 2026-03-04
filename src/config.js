@@ -1,3 +1,5 @@
+const path = require('path');
+
 module.exports = {
   API_BASE_URL: 'http://localhost:3000',
   MODEL: 'gemini-3.0-flash',
@@ -11,4 +13,6 @@ module.exports = {
   REQUEST_TIMEOUT: 120000,
   CAPTION_FONT: '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
   CAPTION_FONT_SIZE: 56,
+  MUSIC_DIR: path.join(__dirname, '..', 'assets'),
+  MUSIC_VOLUME: 0.3,
 };
