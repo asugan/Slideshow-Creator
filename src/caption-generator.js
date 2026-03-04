@@ -1,5 +1,35 @@
 const axios = require('axios');
-const { API_BASE_URL, MODEL, IMAGE_COUNT, REQUEST_TIMEOUT } = require('./config');
+const {
+  API_BASE_URL, MODEL, IMAGE_COUNT, REQUEST_TIMEOUT,
+  TEXT_PROVIDER, OPENAI_COMPAT_BASE_URL, OPENAI_COMPAT_API_KEY, OPENAI_COMPAT_TEXT_MODEL,
+} = require('./config');
+
+async function chatViaOpenAICompat(prompt) {
+  const { data } = await axios.post(`${OPENAI_COMPAT_BASE_URL}/chat/completions`, {
+    model: OPENAI_COMPAT_TEXT_MODEL,
+    messages: [{ role: 'user', content: prompt }],
+  }, {
+    headers: { Authorization: `Bearer ${OPENAI_COMPAT_API_KEY}` },
+    timeout: REQUEST_TIMEOUT,
+  });
+  const text = data.choices?.[0]?.message?.content;
+  if (!text) {
+    throw new Error(`Unexpected OpenAI-compat response: ${JSON.stringify(data).slice(0, 200)}`);
+  }
+  return text;
+}
+
+async function chatViaGeminiReverse(prompt) {
+  const { data } = await axios.post(`${API_BASE_URL}/chat`, {
+    prompt,
+    model: MODEL,
+  }, { timeout: REQUEST_TIMEOUT });
+  const text = data.text;
+  if (!text) {
+    throw new Error(`Unexpected /chat response: ${JSON.stringify(data).slice(0, 200)}`);
+  }
+  return text;
+}
 
 async function generateCaptions(prompts) {
   const promptList = prompts.map((p, i) => `${i + 1}. ${p}`).join('\n');
@@ -17,15 +47,9 @@ Rules:
 - No hashtags, no emojis
 - Output ONLY the numbered list, no extra commentary`;
 
-  const { data } = await axios.post(`${API_BASE_URL}/chat`, {
-    prompt: metaPrompt,
-    model: MODEL,
-  }, { timeout: REQUEST_TIMEOUT });
-
-  const text = data.text;
-  if (!text) {
-    throw new Error(`Unexpected /chat response: ${JSON.stringify(data).slice(0, 200)}`);
-  }
+  const text = TEXT_PROVIDER === 'openai-compat'
+    ? await chatViaOpenAICompat(metaPrompt)
+    : await chatViaGeminiReverse(metaPrompt);
 
   const captions = [];
   for (const line of text.split('\n')) {
