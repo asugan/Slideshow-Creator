@@ -5,6 +5,7 @@ const { generateSingleImage } = require('./src/image-generator');
 const { generateCaptions } = require('./src/caption-generator');
 const { applyTextOverlay } = require('./src/text-overlay');
 const { buildSlideshow } = require('./src/slideshow-builder');
+const { dewatermarkImage } = require('./src/watermark');
 const { IMAGE_COUNT } = require('./src/config');
 
 const WORK_DIR = path.join(__dirname, 'temp', 'current');
@@ -80,6 +81,24 @@ async function cmdImage(num) {
   }
 }
 
+async function cmdDewatermark(num) {
+  const slides = num
+    ? [parseInt(num, 10)]
+    : Array.from({ length: IMAGE_COUNT }, (_, i) => i + 1);
+
+  for (const i of slides) {
+    const imagePath = path.join(WORK_DIR, `slide_${i}.png`);
+    if (!fs.existsSync(imagePath)) {
+      throw new Error(`Missing slide_${i}.png. Run: node index.js image ${i}`);
+    }
+    console.log(`Removing watermark from slide ${i}...`);
+    const meta = await dewatermarkImage(imagePath);
+    console.log(`  Done (source: ${meta.source}, gain: ${meta.alphaGain}, suppression: ${meta.detection.suppressionGain.toFixed(2)})`);
+  }
+
+  console.log('\nWatermarks removed. Now run: node index.js captions');
+}
+
 async function cmdCaptions() {
   const prompts = loadPrompts();
 
@@ -142,6 +161,7 @@ async function cmdAll(topic) {
   for (let i = 1; i <= IMAGE_COUNT; i++) {
     await cmdImage(String(i));
   }
+  await cmdDewatermark();
   await cmdCaptions();
   await cmdOverlay();
   await cmdSlideshow();
@@ -162,6 +182,9 @@ async function main() {
       case 'image':
         await cmdImage(rest);
         break;
+      case 'dewatermark':
+        await cmdDewatermark(rest);
+        break;
       case 'captions':
         await cmdCaptions();
         break;
@@ -178,6 +201,7 @@ async function main() {
         console.log(`Usage:
   node index.js prompts "<topic>"   Generate 3 image prompts
   node index.js image <1-3>         Generate image N
+  node index.js dewatermark [1-3]   Remove Gemini watermark (all or slide N)
   node index.js captions            Generate TikTok captions
   node index.js overlay             Overlay captions on images
   node index.js slideshow           Build MP4 from images
@@ -188,6 +212,7 @@ Example:
   node index.js image 1
   node index.js image 2
   node index.js image 3
+  node index.js dewatermark
   node index.js captions
   node index.js overlay
   node index.js slideshow`);

@@ -9,9 +9,10 @@ TikTok slideshow creator — generates AI images via Gemini, adds text captions,
 ## Commands
 
 ```bash
-npm install                       # Install dependencies (axios)
+npm install                       # Install dependencies (axios, canvas)
 node index.js prompts "<topic>"   # Generate 3 image prompts → temp/current/prompts.json
 node index.js image <1-3>         # Generate image N → temp/current/slide_N.png
+node index.js dewatermark [1-3]   # Remove Gemini watermark (all slides or slide N)
 node index.js captions            # Generate TikTok captions → temp/current/captions.json
 node index.js overlay             # Overlay captions on images → temp/current/slide_N_captioned.png
 node index.js slideshow           # Build MP4 → output/{topic}_{timestamp}.mp4
@@ -25,12 +26,13 @@ No test or lint infrastructure exists.
 - **ffmpeg** — used for drawtext overlays and xfade slideshow building
 - **DejaVuSans-Bold.ttf** — `/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf`
 - **gemini-reverse-api** — must be running on `localhost:3000` (lives at `../gemini-reverse-api`)
+- **node-canvas system libs** — `libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev` (for `canvas` npm package used by dewatermark)
 
 ## Architecture
 
 Step-based CLI where each command runs independently to avoid Gemini session contamination (`/chat` pollutes session state, causing subsequent `/generate-image` calls to fail with 403).
 
-**Pipeline:** `prompts → image 1/2/3 → captions → overlay → slideshow`
+**Pipeline:** `prompts → image 1/2/3 → dewatermark → captions → overlay → slideshow`
 
 | File | Role |
 |---|---|
@@ -38,6 +40,7 @@ Step-based CLI where each command runs independently to avoid Gemini session con
 | `src/config.js` | All constants: API URL, video dimensions, font settings, timeouts |
 | `src/prompt-generator.js` | Calls `/chat` to generate 3 image descriptions from a topic |
 | `src/image-generator.js` | Calls `/generate-image`, handles base64 response → PNG |
+| `src/watermark/` | Gemini watermark remover: reverse alpha blending + adaptive detection (ported from [gemini-watermark-remover](https://github.com/GargantuaX/gemini-watermark-remover)) |
 | `src/caption-generator.js` | Calls `/chat` to generate 3 short TikTok captions from prompts |
 | `src/text-overlay.js` | ffmpeg drawtext: white text, black border/shadow, center-aligned at bottom |
 | `src/slideshow-builder.js` | ffmpeg xfade crossfade, auto-selects `_captioned.png` if available |
