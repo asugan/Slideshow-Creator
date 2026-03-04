@@ -143,6 +143,12 @@ async function cmdSlideshow() {
     imagePaths.push(p);
   }
 
+  const ctaPath = path.join(__dirname, 'assets', 'cta.png');
+  if (fs.existsSync(ctaPath)) {
+    imagePaths.push(ctaPath);
+    console.log('Added CTA slide as final slide.');
+  }
+
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
   const outputFile = path.join(OUTPUT_DIR, `${slugify(topic)}_${timestamp()}.mp4`);
 
