@@ -1,4 +1,5 @@
 const { execFile } = require('child_process');
+const fs = require('fs');
 const { CAPTION_FONT, CAPTION_FONT_SIZE, CAPTION_BOTTOM_MARGIN, CAPTION_BOX_PADDING, CAPTION_BOX_OPACITY, VIDEO_WIDTH, VIDEO_HEIGHT } = require('./config');
 
 const MAX_CHARS_PER_LINE = 25;
@@ -22,24 +23,22 @@ function wrapText(text) {
   return lines.join('\n');
 }
 
-function escapeDrawtext(text) {
-  return text
-    .replace(/\\/g, '\\\\')
-    .replace(/'/g, "'\\''")
-    .replace(/:/g, '\\:')
-    .replace(/%/g, '%%');
+function escapeTextContent(text) {
+  // Only % needs escaping for ffmpeg text expansion in textfile content
+  return text.replace(/%/g, '%%');
 }
 
 function applyTextOverlay(inputPath, outputPath, caption) {
   return new Promise((resolve, reject) => {
     const wrapped = wrapText(caption);
-    const escapedText = escapeDrawtext(wrapped);
+    const textFilePath = inputPath.replace(/\.png$/, '_drawtext.tmp');
+    fs.writeFileSync(textFilePath, escapeTextContent(wrapped));
 
     const scaleFilter = `scale=${VIDEO_WIDTH}:${VIDEO_HEIGHT}:force_original_aspect_ratio=increase,crop=${VIDEO_WIDTH}:${VIDEO_HEIGHT}`;
 
     const drawtext = [
       `fontfile=${CAPTION_FONT}`,
-      `text='${escapedText}'`,
+      `textfile='${textFilePath}'`,
       `fontsize=${CAPTION_FONT_SIZE}`,
       `fontcolor=white`,
       `borderw=3`,
@@ -62,6 +61,7 @@ function applyTextOverlay(inputPath, outputPath, caption) {
     ];
 
     execFile('ffmpeg', args, (error, _stdout, stderr) => {
+      try { fs.unlinkSync(textFilePath); } catch (e) {}
       if (error) {
         reject(new Error(`ffmpeg drawtext failed: ${error.message}\n${stderr}`));
         return;
@@ -71,4 +71,4 @@ function applyTextOverlay(inputPath, outputPath, caption) {
   });
 }
 
-module.exports = { applyTextOverlay, wrapText, escapeDrawtext };
+module.exports = { applyTextOverlay, wrapText, escapeTextContent };

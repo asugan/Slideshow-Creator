@@ -6,12 +6,14 @@ const { generateCaptions } = require('./src/caption-generator');
 const { applyTextOverlay } = require('./src/text-overlay');
 const { buildSlideshow } = require('./src/slideshow-builder');
 const { dewatermarkImage } = require('./src/watermark');
+const { generateMetadata, formatTikTokText, formatInstagramText, formatYouTubeText } = require('./src/metadata-generator');
 const { IMAGE_COUNT } = require('./src/config');
 
 const WORK_DIR = path.join(__dirname, 'temp', 'current');
 const OUTPUT_DIR = path.join(__dirname, 'output');
 const PROMPTS_FILE = path.join(WORK_DIR, 'prompts.json');
 const CAPTIONS_FILE = path.join(WORK_DIR, 'captions.json');
+const METADATA_FILE = path.join(WORK_DIR, 'metadata.json');
 const TOPIC_FILE = path.join(WORK_DIR, 'topic.txt');
 
 function slugify(text) {
@@ -162,6 +164,37 @@ async function cmdSlideshow() {
   console.log(`\nDone! Video saved to: ${outputFile}`);
 }
 
+async function cmdMetadata() {
+  const topic = loadTopic();
+  if (!fs.existsSync(CAPTIONS_FILE)) {
+    throw new Error('No captions found. Run: node index.js captions first');
+  }
+  const captions = JSON.parse(fs.readFileSync(CAPTIONS_FILE, 'utf-8'));
+
+  console.log('Generating platform metadata...');
+  const metadata = await generateMetadata(topic, captions);
+
+  fs.writeFileSync(METADATA_FILE, JSON.stringify(metadata, null, 2));
+
+  // Write per-platform copy-paste ready text files
+  fs.writeFileSync(path.join(WORK_DIR, 'metadata_tiktok.txt'), formatTikTokText(metadata.tiktok));
+  fs.writeFileSync(path.join(WORK_DIR, 'metadata_instagram.txt'), formatInstagramText(metadata.instagram));
+  fs.writeFileSync(path.join(WORK_DIR, 'metadata_youtube.txt'), formatYouTubeText(metadata.youtube));
+
+  console.log('\n── TikTok ──');
+  console.log(formatTikTokText(metadata.tiktok));
+  console.log('\n── Instagram ──');
+  console.log(formatInstagramText(metadata.instagram));
+  console.log('\n── YouTube Shorts ──');
+  console.log(formatYouTubeText(metadata.youtube));
+
+  console.log(`\nMetadata saved to:`);
+  console.log(`  ${METADATA_FILE}`);
+  console.log(`  ${path.join(WORK_DIR, 'metadata_tiktok.txt')}`);
+  console.log(`  ${path.join(WORK_DIR, 'metadata_instagram.txt')}`);
+  console.log(`  ${path.join(WORK_DIR, 'metadata_youtube.txt')}`);
+}
+
 async function cmdAll(topic) {
   if (!topic) {
     console.error('Usage: node index.js all "<topic>"');
@@ -176,6 +209,7 @@ async function cmdAll(topic) {
   await cmdCaptions();
   await cmdOverlay();
   await cmdSlideshow();
+  await cmdMetadata();
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
@@ -205,6 +239,9 @@ async function main() {
       case 'slideshow':
         await cmdSlideshow();
         break;
+      case 'metadata':
+        await cmdMetadata();
+        break;
       case 'all':
         await cmdAll(rest);
         break;
@@ -216,6 +253,7 @@ async function main() {
   node index.js captions            Generate TikTok captions
   node index.js overlay             Overlay captions on images
   node index.js slideshow           Build MP4 from images
+  node index.js metadata            Generate platform metadata (TikTok/IG/YT)
   node index.js all "<topic>"       Run all steps
 
 Example:
@@ -228,7 +266,8 @@ Example:
   node index.js dewatermark
   node index.js captions
   node index.js overlay
-  node index.js slideshow`);
+  node index.js slideshow
+  node index.js metadata`);
         process.exit(command ? 1 : 0);
     }
   } catch (err) {

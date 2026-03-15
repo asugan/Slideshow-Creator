@@ -16,6 +16,7 @@ node index.js dewatermark [1-3]   # Remove Gemini watermark (all slides or slide
 node index.js captions            # Generate TikTok captions → temp/current/captions.json
 node index.js overlay             # Overlay captions on images → temp/current/slide_N_captioned.png
 node index.js slideshow           # Build MP4 → output/{topic}_{timestamp}.mp4
+node index.js metadata            # Generate platform metadata → temp/current/metadata.json + .txt files
 node index.js all "<topic>"       # Run full pipeline end-to-end
 ```
 
@@ -32,7 +33,7 @@ No test or lint infrastructure exists.
 
 Step-based CLI where each command runs independently to avoid Gemini session contamination (`/chat` pollutes session state, causing subsequent `/generate-image` calls to fail with 403).
 
-**Pipeline:** `prompts → image 1/2/3 → dewatermark → captions → overlay → slideshow`
+**Pipeline:** `prompts → image 1/2/3 → dewatermark → captions → overlay → slideshow → metadata`
 
 | File | Role |
 |---|---|
@@ -44,6 +45,7 @@ Step-based CLI where each command runs independently to avoid Gemini session con
 | `src/caption-generator.js` | Calls `/chat` to generate 3 short TikTok captions from prompts |
 | `src/text-overlay.js` | ffmpeg drawtext: white text, black border/shadow, center-aligned at bottom |
 | `src/slideshow-builder.js` | ffmpeg xfade crossfade, auto-selects `_captioned.png` if available |
+| `src/metadata-generator.js` | Generates TikTok/Instagram/YouTube metadata with app link (Petopia) |
 
 ## Critical Implementation Details
 

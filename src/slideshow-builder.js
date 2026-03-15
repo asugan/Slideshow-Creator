@@ -20,7 +20,7 @@ const {
   CAPTION_BOX_PADDING,
   CAPTION_BOX_OPACITY,
 } = require('./config');
-const { wrapText, escapeDrawtext } = require('./text-overlay');
+const { wrapText, escapeTextContent } = require('./text-overlay');
 
 // Ken Burns presets: zoom direction + pan direction
 const KB_PRESETS = [
@@ -67,7 +67,7 @@ function buildKenBurnsFilter(slideIndex, frames) {
   return `zoompan=z='${z}':x='${x}':y='${y}':d=${frames}:s=${superW}x${superH}:fps=${VIDEO_FPS},scale=${VIDEO_WIDTH}:${VIDEO_HEIGHT}:flags=lanczos`;
 }
 
-function buildFfmpegArgs(imagePaths, outputPath, musicPath, captions) {
+function buildFfmpegArgs(imagePaths, outputPath, musicPath, captions, textFiles) {
   const args = [];
   const n = imagePaths.length;
   const isCtaSlide = (i) => i === n - 1 && n > 1; // last slide is CTA
@@ -118,13 +118,10 @@ function buildFfmpegArgs(imagePaths, outputPath, musicPath, captions) {
       const textEnd = slideStart + IMAGE_DURATION - FADE_DURATION;
       const fadeEnd = textStart + CAPTION_FADE_IN_DURATION;
 
-      const wrapped = wrapText(captions[i]);
-      const escaped = escapeDrawtext(wrapped);
-
       const outLabel = `ct${i}`;
       const drawtext = [
         `fontfile=${CAPTION_FONT}`,
-        `text='${escaped}'`,
+        `textfile='${textFiles[i]}'`,
         `fontsize=${CAPTION_FONT_SIZE}`,
         `fontcolor=white`,
         `borderw=3`,
@@ -194,10 +191,26 @@ function buildSlideshow(imagePaths, outputPath, captions = null) {
   if (musicPath) {
     console.log(`  Background music: ${path.basename(musicPath)}`);
   }
+
+  // Write captions to temp files to avoid ffmpeg drawtext escaping issues
+  const textFiles = [];
+  if (captions) {
+    for (let i = 0; i < captions.length; i++) {
+      const wrapped = wrapText(captions[i]);
+      const tmpPath = path.join(path.dirname(outputPath), `_caption_${i}.tmp`);
+      fs.writeFileSync(tmpPath, escapeTextContent(wrapped));
+      textFiles.push(tmpPath);
+    }
+  }
+
   return new Promise((resolve, reject) => {
-    const args = buildFfmpegArgs(imagePaths, outputPath, musicPath, captions);
+    const args = buildFfmpegArgs(imagePaths, outputPath, musicPath, captions, textFiles);
 
     execFile('ffmpeg', args, (error, _stdout, stderr) => {
+      // Clean up temp caption files
+      for (const f of textFiles) {
+        try { fs.unlinkSync(f); } catch (e) {}
+      }
       if (error) {
         reject(new Error(`ffmpeg failed: ${error.message}\n${stderr}`));
         return;

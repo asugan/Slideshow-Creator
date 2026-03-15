@@ -31,4 +31,6 @@ module.exports = {
   SPARKLE_WM_MARGIN: 57,
   MUSIC_DIR: path.join(__dirname, '..', 'assets'),
   MUSIC_VOLUME: 0.3,
+  APP_LINK: 'https://apps.apple.com/id/app/petopia-pet-care-tracker/id6757099799',
+  APP_NAME: 'Petopia',
 };
